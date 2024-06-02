@@ -1,0 +1,15 @@
+<apex:page showHeader="false" sidebar="false" controller="OAuthCallbackController">
+    <script>
+        // Extract the authorization code from the URL parameters
+        var urlParams = new URLSearchParams(window.location.search);
+        var code = urlParams.get('code');
+
+        // Redirect to the Lightning component with the code
+        if (code) {
+            window.location.href = '/lightning/n/YourCustomPage?code=' + code;
+        } else {
+            // Handle the error if the code is not present
+            window.location.href = '/lightning/n/YourCustomPage?error=AuthorizationFailed';
+        }
+    </script>
+</apex:page>

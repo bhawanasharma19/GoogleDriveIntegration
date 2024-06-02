@@ -1,0 +1,14 @@
+<apex:page >
+    <script>
+        window.onload = function() {
+            var urlParams = new URLSearchParams(window.location.search);
+            var code = urlParams.get('code');
+            if (code) {
+                window.opener.postMessage({ code: code }, '*');
+                window.close();
+            } else {
+                alert('Authorization code not found');
+            }
+        };
+    </script>
+</apex:page>

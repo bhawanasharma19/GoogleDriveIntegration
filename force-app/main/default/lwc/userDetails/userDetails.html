@@ -1,0 +1,25 @@
+<template>
+    <div>
+        <lightning-card title="Logged in User Details" icon-name="standard:user">
+            <div class="slds-m-around_medium slds-list_horizontal slds-wrap">
+                <table class="slds-table slds-table_bordered slds-table_fixed-layout" border="1px solid" role="grid">
+                    <tbody>
+                        <tr>
+                            <th style="background:#f3f2f2;">Current User Id: </th>
+                            <td>{userId}</td>
+                        </tr>
+                        <tr>
+                            <th style="background:#f3f2f2;">Current User Name: </th>
+                            <td>{userName}</td>
+                        </tr>
+                        <tr>
+                            <th style="background:#f3f2f2;">Current User Email: </th>
+                            <td>{userEmail}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </lightning-card>
+
+    </div>
+</template>

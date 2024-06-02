@@ -1,0 +1,33 @@
+<template>
+    <div>
+        <lightning-card title="Google Drive Documents" icon-name="standard:user">
+            <h1> <strong class="slds-align_absolute-center slds-text-heading_medium">Files</strong> </h1> 
+           <!-- <lightning-button class="slds-align_absolute-center" variant="brand" type="file" name="Upload file" label="Upload"></lightning-button>-->
+            <div class="slds-m-around_medium slds-list_horizontal slds-wrap slds-align_absolute-center">
+                
+                <template for:each={filesData} for:item="file">
+                    <div class="slds-box slds-box_xx-small slds-grid slds-col slds-size_12-of-12" key={file.Id}>
+                        
+                        <div class="slds-col slds-p-top_large">
+                            <a href="#" data-id={file.Id} onclick={handlefileClick}>{file.Name}</a>
+                        </div>
+                        <div class="slds-col slds-p-around_medium slds-text-align_right">
+                            <template if:true={file.isRename}>
+                                <input type="text" value={file.newName} onchange={handleRenameChange} data-id={file.Id}></input>
+                                <lightning-button variant="brand" label="Save" title="Save" onclick={handleRename}></lightning-button>
+                            </template>
+                            <template if:false={file.isRename}>
+                                <lightning-button-menu alternative-text="Show menu">
+                                    <lightning-menu-item data-id={file.Id} value="Preview" label="Preview" onclick={handlePreview}></lightning-menu-item>
+                                    <lightning-menu-item data-id={file.Id} value="Delete" label="Delete" onclick={handleDelete}></lightning-menu-item>
+                                    <lightning-menu-item data-id={file.Id} value="Rename" label="Rename" onclick={handleRenameMode}></lightning-menu-item>
+                                </lightning-button-menu>
+                            </template>
+                        </div>
+                        
+                    </div>
+                </template>
+            </div>
+        </lightning-card>
+    </div>
+</template>
