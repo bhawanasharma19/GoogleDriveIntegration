@@ -4,7 +4,8 @@ import handleAuthenticateUser from '@salesforce/apex/googleDriveFinalCompControl
 import handleAccessTokenFirstTime from '@salesforce/apex/googleDriveFinalCompController.handleAccessTokenFirstTime';
 import checkExpiryTime from '@salesforce/apex/googleDriveFinalCompController.checkExpiryTime';
 import getFileIdNameMap2 from '@salesforce/apex/GoogleDrive.getFileIdNameMap2';
-
+import uploadFolderMethod from '@salesforce/apex/GoogleDriveApi2.uploadFolderMethod';
+import uploadSpecificFolderMethod from '@salesforce/apex/GoogleDriveApi2.uploadSpecificFolderMethod';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import Id from "@salesforce/user/Id";
 import getGDFiles2 from '@salesforce/apex/GoogleDriveApi2.getGDFiles2';
@@ -14,6 +15,7 @@ import checkNewUser from '@salesforce/apex/googleDriveFinalCompController.checkN
 import authenticateUser from '@salesforce/apex/googleDriveFinalCompController.authenticateUser';
 import deleteFileContentMethod from '@salesforce/apex/GoogleDriveApi2.deleteFileContentMethod';
 import ReNameFileContentMethod from '@salesforce/apex/GoogleDriveApi2.ReNameFileContentMethod';
+import FolderName from '@salesforce/schema/Report.FolderName';
 
 const INTERVAL = 5 * 60 * 1000; // 5 minutes
 
@@ -31,6 +33,9 @@ export default class GoogleDriveFinalComp extends LightningElement {
     @track isNewUser = false;
     @track isPreview = false;
     @track isdelete = false;
+    @track isaddfolder = false;
+    @track folderinputname = "New Folder";
+    @track deleteid;
     //google drive properties
     @track filesData = [];
     fileId;
@@ -47,6 +52,7 @@ export default class GoogleDriveFinalComp extends LightningElement {
     intervalId;
     @track closefolderbread  = false;
     @track breadcrumbcount = [];
+    @track inputname;
     //New property to store the current folder name
     @track currentFolderName = 'Root';
     @track isViewingFiles = true;
@@ -74,6 +80,7 @@ export default class GoogleDriveFinalComp extends LightningElement {
 
         // Call initially when component is connected
         this.checkExpiryTime();
+        console.log('this.folderinputname: '+this.folderinputname);
     }
     
     disconnectedCallback() {
@@ -111,8 +118,92 @@ export default class GoogleDriveFinalComp extends LightningElement {
 
     closeModal() {
         this.isModalOpen = false;
+        this.isdelete = false;
+        this.isaddfolder = false;
+    }
+    handleaddfolder(){
+        this.isaddfolder = true;
+
     }
 
+    handlenamechange(event){
+        this.inputname = event.target.value;
+    }
+    addfolder(){
+        
+        console.log('inputname: '+this.inputname);
+        console.log('current fileid :'+this.fileId);
+        console.log('current folder name: '+this.currentFolderName);
+        if(this.inputname !== null && this.inputname !== '' && (this.currentFolderName=='Root')){
+            uploadFolderMethod({ userId : this.userId, folderName : this.inputname})
+        .then(result => {
+            if(result === true){
+                this.dispatchEvent(new ShowToastEvent({
+                    title: 'Success',
+                    message: 'folder added successfully!',
+                    variant: 'success'
+                }));
+                this.isSaveDisabled = true;
+                this.isaddfolder = false;
+                window.location.reload();
+            }
+            else if(result === false){
+                this.dispatchEvent(new ShowToastEvent({
+                    title: 'Warning',
+                    message: 'folder cannot be created!',
+                    variant: 'warning'
+                }));
+                this.isSaveDisabled = true;
+                this.closeModal();
+                window.location.reload();
+            }
+        })
+        .catch(error => {
+            // Handle error
+            this.dispatchEvent(new ShowToastEvent({
+                title: 'Error',
+                message: 'Failed to create folder: ' + error.body.message,
+                variant: 'error'
+            }));
+        });
+        }
+        else if(this.inputname !== null && this.inputname !== '' && this.fileId !== null && this.fileId !== ''){
+            console.log('inside not root');
+            uploadSpecificFolderMethod({ userId : this.userId, fileId : this.fileId , folderName : this.inputname})
+            .then(result => {
+                if(result === true){
+                    this.dispatchEvent(new ShowToastEvent({
+                        title: 'Success',
+                        message: 'folder added successfully!',
+                        variant: 'success'
+                    }));
+                    this.isSaveDisabled = true;
+                    this.isaddfolder = false;
+                    window.location.reload();
+                }
+                else if(result === false){
+                    this.dispatchEvent(new ShowToastEvent({
+                        title: 'Warning',
+                        message: 'folder cannot be created!',
+                        variant: 'warning'
+                    }));
+                    this.isSaveDisabled = true;
+                    this.closeModal();
+                    window.location.reload();
+                }
+            })
+            .catch(error => {
+                // Handle error
+                this.dispatchEvent(new ShowToastEvent({
+                    title: 'Error',
+                    message: 'Failed to create folder: ' + error.body.message,
+                    variant: 'error'
+                }));
+            });         
+        }
+        
+    }
+    
     handleClientIdChange(event) {
         this.clientKey = event.target.value;
         console.log('clientKey: '+this.clientKey);
@@ -265,8 +356,6 @@ export default class GoogleDriveFinalComp extends LightningElement {
                     "Id": item,  
                     ...data[item]  
                 };
-                console.log('fileData for item ' + item + ':', fileData); 
-                console.log('fileData demo: '+fileData);
                 return fileData;  
             });
             console.log('Files data:', this.filesData);
@@ -289,13 +378,20 @@ export default class GoogleDriveFinalComp extends LightningElement {
             console.log('error is in files data' + error);
         }
     }*/
-    handleDelete(event) {
-        this.fileId = event.target.dataset.id;
-        this.deleteFile(this.fileId);
-        console.log('fileId: ' + this.fileId);
-    }
-    handledeletemodal(){
+    
+    handledeletemodal(event){
         this.isdelete = true;
+        this.fileId = event.target.dataset.id;
+        this.deleteid = this.fileId;
+        console.log('this.isdelete: '+this.isdelete);
+        console.log('this.fileId: '+this.fileId);
+    
+    }
+    handleDelete(event) {
+        
+        console.log('deleteid: ' + this.deleteid);
+        this.deleteFile(this.deleteid);
+        
     }
     //new
     handlePreview(event) {

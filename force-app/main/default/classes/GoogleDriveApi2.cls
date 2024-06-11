@@ -12,11 +12,11 @@ Ver   Date         Author                               Modification
 public class GoogleDriveApi2 {
 /*
     *********************************************************
-    @Method Name    : getGDFiles
+    @Method Name    : getGDFiles2
     @author         : Bhawana Sharma
-    @description    : getGDFiles method is used to fetch Google Drive files with Id,Name information. 
+    @description    : getGDFiles2 method is used to fetch Google Drive files with Id,file information. 
     @param          :
-    @return         : Map<String, String> - fileIdNameMap
+    @return         : Map<String, Object> - fileIdNameMap
     ********************************************************
 */	@AuraEnabled(Cacheable = true)
 	public static Map<String, Object> getGDFiles2(String userId) {
@@ -41,7 +41,8 @@ public class GoogleDriveApi2 {
 
         HttpRequest request = new HttpRequest();
         request.setMethod('GET');
-        request.setEndpoint('https://www.googleapis.com/drive/v3/files');
+        //request.setEndpoint('https://www.googleapis.com/drive/v3/files');
+        request.setEndpoint('https://www.googleapis.com/drive/v3/files?q=%27root%27+in+parents');
         request.setHeader('Authorization', 'Bearer ' + accessToken);
         request.setHeader('Content-Type', 'application/json');
         Http http = new Http();
@@ -74,7 +75,15 @@ public class GoogleDriveApi2 {
 		System.debug('filesDataMap file/folder info: '+filesDataMap);
         return filesDataMap;
     }
-    //old as it is
+/*
+    *********************************************************
+    @Method Name    : getGDFiles
+    @author         : Bhawana Sharma
+    @description    : getGDFiles method is used to fetch Google Drive files with Id,Name information. 
+    @param          :
+    @return         : Map<String, String> - fileIdNameMap
+    ********************************************************
+*/
 	public static Map<String, String> getGDFiles(String userId) {
         Map<String, Object> googleDriveDataMap = new Map<String, Object>();
         Map<String, Object> filesDataMap = new Map<String, Object>();
@@ -175,26 +184,114 @@ public class GoogleDriveApi2 {
     }
 /*
     *********************************************************
-    @Method Name    : uploadFileContentMethod
+    @Method Name    : uploadFolderMethod
     @author         : Bhawana Sharma
-    @description    : uploadFileContentMethod method is used to upload files on Google Drive 
+    @description    : uploadFolderMethod method is used to upload folders on Google Drive 
+    @param          :
+    @return         : 
+    ********************************************************
+*/	@AuraEnabled(Cacheable = true)
+    public static Boolean uploadFolderMethod(String userId,String folderName) {
+        System.debug('folderName: '+folderName);
+        Map<String, Object> googleDriveDataMap = new Map<String, Object>();
+        Boolean isAddFolder = false;
+        String accessToken;
+        List<GD_User_Data__mdt> userRecordList = [
+                                                 SELECT 
+            										Id, MasterLabel, DeveloperName, clientId__c, clientSecretKey__c, RefreshToken__c, AccessToken__c, UserId__c, UserName__c 
+                                                 FROM 
+            										GD_User_Data__mdt 
+                                                 WHERE 
+            										UserId__c = :userId 
+                                                 LIMIT 1
+                                            	 ];
+
+        if (!userRecordList.isEmpty()) {
+            String ac = userRecordList[0].AccessToken__c;
+            accessToken = EncodingUtil.urlEncode(ac, 'UTF-8');
+        }
+        
+		system.debug('accesst0ken: '+accessToken);
+        String body = '{"name" : "'+ folderName +'","mimeType" : "application/vnd.google-apps.folder"}';
+		system.debug('body: '+body);
+        if(folderName!=null&&folderName!=''){
+            HttpRequest request = new HttpRequest();
+            request.setEndpoint('https://www.googleapis.com/drive/v3/files');
+            request.setMethod('POST');
+            request.setHeader('Authorization', 'Bearer ' + accessToken);
+            request.setHeader('Content-Type', 'application/json');
+            request.setBody(body);
+            Http http = new Http();
+            HttpResponse response = http.send(request);
+            /*String body = JSON.serialize(new Map<String, Object>{
+                'name' => folderName,
+                'mimeType' => 'application/vnd.google-apps.folder'
+            });*/
+            
+            system.debug('response: '+response.getbody());
+            if (response.getBody() != null) {
+                isAddFolder = true;
+            }
+            else{
+                isAddFolder = false;
+            }
+            }
+        
+        return isAddFolder;
+    }
+/*
+    *********************************************************
+    @Method Name    : uploadSpecificFolderMethod
+    @author         : Bhawana Sharma
+    @description    : uploadSpecificFolderMethod method is used to upload folders on individual folders in Google Drive 
     @param          :
     @return         : 
     ********************************************************
 */
-    public static void uploadFileContentMethod(String fileId) {
+    @AuraEnabled(Cacheable = true)
+    public static Boolean uploadSpecificFolderMethod(String userId,String fileId,String folderName) {
         Map<String, Object> googleDriveDataMap = new Map<String, Object>();
+        String accessToken;
+        Boolean isAddFolder = false;
+        List<GD_User_Data__mdt> userRecordList = [
+                                                 SELECT 
+            										Id, MasterLabel, DeveloperName, clientId__c, clientSecretKey__c, RefreshToken__c, AccessToken__c, UserId__c, UserName__c 
+                                                 FROM 
+            										GD_User_Data__mdt 
+                                                 WHERE 
+            										UserId__c = :userId 
+                                                 LIMIT 1
+                                            	 ];
+
+        if (!userRecordList.isEmpty()) {
+            String ac = userRecordList[0].AccessToken__c;
+            accessToken = EncodingUtil.urlEncode(ac, 'UTF-8');
+        }
+        
+		system.debug('accesst0ken: '+accessToken);
+        String body = '{"title" : "'+ folderName +'","mimeType" : "application/vnd.google-apps.folder","parents" : [{"kind" : "drive#file","id" : "'+fileId+'"}]}';
+		system.debug('body: '+body);
         HttpRequest request = new HttpRequest();
-        request.setEndpoint('callout:GD_credential' + '/drive/v3/files/' + fileId + '?uploadType=media');
-        request.setMethod('PATCH');
-        request.setHeader('Content-Type', 'application/vnd.ms-excel');
-        // request.setHeader('Authorization', 'Bearer' + accessToken);
+        request.setEndpoint('https://www.googleapis.com/drive/v2/files');
+        request.setMethod('POST');
+        request.setHeader('Authorization', 'Bearer ' + accessToken);
+        request.setHeader('Content-Type', 'application/json');
+        request.setBody(body);
         Http http = new Http();
         HttpResponse response = http.send(request);
-
-        if (response.getStatusCode() == 200 && response.getBody() != null) {
-            googleDriveDataMap = (Map<String, Object>) JSON.deserializeUntyped(response.getBody());
-        }
+            /*String body = JSON.serialize(new Map<String, Object>{
+                'name' => folderName,
+                'mimeType' => 'application/vnd.google-apps.folder'
+            });*/
+            
+            system.debug('response: '+response.getbody());
+            if (response.getBody() != null) {
+                isAddFolder = true;
+            }
+            else{
+                isAddFolder = false;
+            }
+        return isAddFolder; 
     }
 /*
     *********************************************************
@@ -285,11 +382,11 @@ public class GoogleDriveApi2 {
     }
 /*
     *********************************************************
-    @Method Name    : previewFileContentMethod
+    @Method Name    : getFolderContentMethod
     @author         : Bhawana Sharma
-    @description    : previewFileContentMethod method is used to preview files on Google Drive in Salesforce
+    @description    : getFolderContentMethod method is used to fetch folder data from Google Drive in Salesforce
     @param          :
-    @return         : Boolean
+    @return         : List<String>
     ********************************************************
 */
     @AuraEnabled(cacheable = true)
@@ -353,7 +450,16 @@ public class GoogleDriveApi2 {
         return childFileIdList;
         
     }
-    
+/*
+    *********************************************************
+    @Method Name    : getFileContentMethod
+    @author         : Bhawana Sharma
+    @description    : getFileContentMethod method is used to fetch files data of the specific folder from
+					  Google Drive in Salesforce
+    @param          :
+    @return         : GoogleDriveFile
+    ********************************************************
+*/    
     public static GoogleDriveFile getFileContentMethod(String fileId,String userId){
         GoogleDriveFile googleDriveFile = new GoogleDriveFile();
         List<Object> googleDriveDataList = new List<Object>();
@@ -390,7 +496,16 @@ public class GoogleDriveApi2 {
         System.debug('googleDriveFile: '+googleDriveFile);
         return googleDriveFile;
     }
-    
+/*
+    *********************************************************
+    @Method Name    : GoogleDriveFile
+    @author         : Bhawana Sharma
+    @description    : GoogleDriveFile class is a wrapper class used to store files data of the specific folder from
+					  Google Drive in Salesforce
+    @param          :
+    @return         : 
+    ********************************************************
+*/     
     public class GoogleDriveFile {
         
         public String kind { get; set; }
