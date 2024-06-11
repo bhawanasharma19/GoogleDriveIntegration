@@ -10,7 +10,7 @@ Ver   Date         Author                               Modification
 *********************************************************
 */
 public class GoogleDriveAuthCode2 {
-    private static String redirectUri = 'https://algoworks16-dev-ed.develop.my.site.com/gdintegration/s/';
+    private static String redirectUri = 'https://yoursitename.my.site.com/gdintegration/s/';
     private static String authUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
     private static String scope = 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/drive.apps.readonly https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.metadata https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/drive.photos.readonly https://www.googleapis.com/auth/drive.readonly';
     private static String tokenUrl = 'https://accounts.google.com/o/oauth2/token';
