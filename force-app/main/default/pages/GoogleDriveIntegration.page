@@ -1,7 +1,0 @@
-<apex:page controller="GoogleDriveAuthCode2">
-    <apex:form >
-        <apex:pageBlock >
-            <apex:commandButton value="Authenticate" action="{!DriveAuth}"/>
-        </apex:pageBlock>
-    </apex:form>
-</apex:page>
